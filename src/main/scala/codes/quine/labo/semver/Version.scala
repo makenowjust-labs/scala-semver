@@ -33,9 +33,16 @@ final case class Version(
 }
 
 object Version {
-  // Copied from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+  // This is copied from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string.
   private[this] val syntax: Regex =
-    """^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$""".r
+    (
+      // major.minor.patch
+      """^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)""" +
+      // -prerelease (optional)
+      """(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?""" +
+      // +build (optional)
+      """(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"""
+    ).r
 
   /**
     * Parse a string as semantic versioning version.
@@ -68,7 +75,7 @@ object Version {
       case (List(), _)      => 1
       case (_, List())      => -1
       case (_, _)           => 0
-      // In other case, thet are compared by usual list comparison mannar.
+      // In other case, they are compared by usual list comparison mannar.
     }.orElse(Ordering.Implicits.seqOrdering(Ordering[Either[Int, String]] {
       case (Left(_), Right(_))  => 1
       case (Right(_), Left(_))  => -1
