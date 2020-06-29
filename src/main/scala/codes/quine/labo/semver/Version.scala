@@ -33,7 +33,7 @@ final case class Version(
 }
 
 object Version {
-  // This is copied from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string.
+  // This is copied from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string and modified.
   private[this] val syntaxR =
     (
       // major.minor.patch

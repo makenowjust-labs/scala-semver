@@ -3,7 +3,10 @@ package codes.quine.labo.semver
 import Version._
 import VersionSet._
 
-final case class VersionSet(set: List[List[Condition]])
+final case class VersionSet(set: List[List[Condition]]) {
+  def contains(v: Version): Boolean =
+    set.exists(_.forall(_.contains(v)))
+}
 
 object VersionSet {
   sealed abstract class Op
@@ -16,7 +19,16 @@ object VersionSet {
     final case object EQ extends Op
   }
 
-  final case class Condition(op: Op, value: Version)
+  final case class Condition(op: Op, value: Version) {
+    def contains(v: Version): Boolean =
+      op match {
+        case Op.LT => v < value
+        case Op.LE => v <= value
+        case Op.GT => v > value
+        case Op.GE => v >= value
+        case Op.EQ => v == value
+      }
+  }
 
   def parse(string: String): Option[VersionSet] =
     traverse(orSepR.split(string).toList) { s =>
