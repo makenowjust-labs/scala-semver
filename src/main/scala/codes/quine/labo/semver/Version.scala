@@ -34,14 +34,14 @@ final case class Version(
 
 object Version {
   // This is copied from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string.
-  private[this] val syntax: Regex =
+  private[this] val syntaxR =
     (
       // major.minor.patch
       """^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)""" +
-      // -prerelease (optional)
-      """(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?""" +
-      // +build (optional)
-      """(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"""
+        // -prerelease (optional)
+        """(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?""" +
+        // +build (optional)
+        """(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"""
     ).r
 
   /**
@@ -55,7 +55,7 @@ object Version {
     */
   def parse(string: String): Option[Version] =
     string match {
-      case syntax(major, minor, patch, prerelease, build) => {
+      case syntaxR(major, minor, patch, prerelease, build) => {
         val version = Version(
           major.toInt,
           minor.toInt,
@@ -102,8 +102,11 @@ object Version {
 
   object Prerelease {
 
-    /** An empty [[Prerelease]]. Note that it is the greatest object of any Prerelease. */
+    /** An empty Prerelease object. Note that it is the greatest object of any Prerelease. */
     def empty: Prerelease = Prerelease(List.empty)
+
+    /** A Prerelease object contains a zero. Note that it is the least object of any Prerelease. */
+    def zero: Prerelease = Prerelease(List(Left(0)))
 
     /**
       * Parse X.X.X-prerelease part of semantic versioning version.
