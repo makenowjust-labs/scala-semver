@@ -12,7 +12,7 @@ import Version._
   * @param patch X.X.patch part number
   * @param prerelease X.X.X-prerelease part
   * @param build X.X.X+build part
-  * @see https://semver.org/
+  * @see [[https://semver.org/]]
   */
 final case class Version(
     major: Int,
@@ -49,9 +49,9 @@ object Version {
     *
     * @param string a semantic versioning version string
     * @return a result of parsing.
-    *   It returns [[Some]] value with [[Version]] object if parsing is succeeded.
-    *   Otherwise, when it is failed on parsing, it returns [[None]] value.
-    * @see https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions
+    *   It returns [[scala.Some Some]] value with [[Version]] object if parsing is succeeded.
+    *   Otherwise, when it is failed on parsing, it returns [[scala.None None]] value.
+    * @see [[https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions]]
     */
   def parse(string: String): Option[Version] =
     string match {
@@ -91,7 +91,7 @@ object Version {
     * This represents a prereleas part of semantic versioning version.
     *
     * @param parts parts of prerelease.
-    *   It can contain either [[Int]] or [[String]].
+    *   It can contain either [[scala.Int Int]] or [[java.lang.String String]].
     *   When String contains only digits, it must becoma Int.
     */
   final case class Prerelease(parts: List[Either[Int, String]]) extends Ordered[Prerelease] {
