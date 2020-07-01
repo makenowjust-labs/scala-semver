@@ -112,7 +112,7 @@ object VersionSet {
       var tokens = tokenSepR
         .split(opR.replaceAllIn(string, m => s"${m.group(1)} ").trim())
         .toList
-        .filterNot(_.isBlank())
+        .filterNot(_.isEmpty())
 
       // 1. Case of `1.2.3 - 4.5.6`:
       if (tokens.size == 3 && tokens(1) == "-") {
