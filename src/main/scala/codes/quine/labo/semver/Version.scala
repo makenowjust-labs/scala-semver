@@ -12,7 +12,7 @@ import Version._
   * @param patch X.X.patch part number
   * @param prerelease X.X.X-prerelease part
   * @param build X.X.X+build part
-  * @see https://semver.org/
+  * @see [[https://semver.org/]]
   */
 final case class Version(
     major: Int,
@@ -33,15 +33,15 @@ final case class Version(
 }
 
 object Version {
-  // This is copied from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string.
-  private[this] val syntax: Regex =
+  // This is copied from https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string and modified.
+  private[this] val syntaxR =
     (
       // major.minor.patch
-      """^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)""" +
-      // -prerelease (optional)
-      """(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?""" +
-      // +build (optional)
-      """(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"""
+      """(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)""" +
+        // -prerelease (optional)
+        """(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?""" +
+        // +build (optional)
+        """(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?"""
     ).r
 
   /**
@@ -49,13 +49,13 @@ object Version {
     *
     * @param string a semantic versioning version string
     * @return a result of parsing.
-    *   It returns [[Some]] value with [[Version]] object if parsing is succeeded.
-    *   Otherwise, when it is failed on parsing, it returns [[None]] value.
-    * @see https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions
+    *   It returns [[scala.Some Some]] value with [[Version]] object if parsing is succeeded.
+    *   Otherwise, when it is failed on parsing, it returns [[scala.None None]] value.
+    * @see [[https://semver.org/#backusnaur-form-grammar-for-valid-semver-versions]]
     */
   def parse(string: String): Option[Version] =
     string match {
-      case syntax(major, minor, patch, prerelease, build) => {
+      case syntaxR(major, minor, patch, prerelease, build) => {
         val version = Version(
           major.toInt,
           minor.toInt,
@@ -91,7 +91,7 @@ object Version {
     * This represents a prereleas part of semantic versioning version.
     *
     * @param parts parts of prerelease.
-    *   It can contain either [[Int]] or [[String]].
+    *   It can contain either [[scala.Int Int]] or [[java.lang.String String]].
     *   When String contains only digits, it must becoma Int.
     */
   final case class Prerelease(parts: List[Either[Int, String]]) extends Ordered[Prerelease] {
@@ -102,8 +102,11 @@ object Version {
 
   object Prerelease {
 
-    /** An empty [[Prerelease]]. Note that it is the greatest object of any Prerelease. */
+    /** An empty Prerelease object. Note that it is the greatest object of any Prerelease. */
     def empty: Prerelease = Prerelease(List.empty)
+
+    /** A Prerelease object contains a zero. Note that it is the least object of any Prerelease. */
+    def zero: Prerelease = Prerelease(List(Left(0)))
 
     /**
       * Parse X.X.X-prerelease part of semantic versioning version.
