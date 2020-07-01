@@ -1,15 +1,12 @@
 package codes.quine.labo.semver
 
-import scala.collection.mutable
-
 import minitest.SimpleTestSuite
 
 import Version._
-import scala.util.Random
 
 object VersionSuite extends SimpleTestSuite {
-  test("Version.parse, Version#toString") {
-    val testCases = mutable.LinkedHashMap(
+  test("Version.parse") {
+    val testCases = List(
       "0.0.0" -> Version(0, 0, 0, Prerelease.empty, None),
       "1.0.0" -> Version(1, 0, 0, Prerelease.empty, None),
       "1.2.3" -> Version(1, 2, 3, Prerelease.empty, None),

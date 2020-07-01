@@ -68,10 +68,7 @@ object VersionSet {
     * @see [[https://github.com/npm/node-semver#ranges]]
     */
   def parse(string: String): Option[VersionSet] =
-    traverse(unionSepR.split(string).toList) { s =>
-      traverse(intersectionSepR.split(hyphenSepR.replaceAllIn(s, "-").trim()).toList)(Constraint.parse(_))
-        .map(_.flatten)
-    }.map(VersionSet(_))
+    traverse(unionSepR.pattern.split(string, -1).toList)(Constraint.parse(_)).map(VersionSet(_))
 
   /**
     * Traverse a list with [[scala.Option]] effect.
@@ -100,61 +97,90 @@ object VersionSet {
   }
 
   private[this] val unionSepR = raw"\s*\|\|\s*".r
-  private[this] val hyphenSepR = raw"\s*-\s*".r
-  private[this] val intersectionSepR = raw"\s+".r
 
   object Constraint {
 
     /**
-      * Parse a string as version constraint.
+      * Parse a string as version constraints.
       *
       * @param string a version constraint string
       * @return [[scala.Some Some]] when parsing is succeeded, or [[scala.None None]] for failure.
       *   A value of result is a list of contraint.
-      *   Some contraint syntax (e.g. ~1.0.0) needs two primitive [[Constraint]].
       *   In addition, an empty list means tautology constrait, which is always true.
       */
-    def parse(string: String): Option[List[Constraint]] =
-      string match {
-        case simpleR(op, major, minor, patch, prerelease, _) => {
-          val list = Option(op) match {
-            case Some("<") =>
-              parseLT(major, minor, patch, Prerelease.parse(prerelease))
-            case Some("<=") =>
-              parseLE(major, minor, patch, Prerelease.parse(prerelease))
-            case Some(">") =>
-              parseGT(major, minor, patch, Prerelease.parse(prerelease))
-            case Some(">=") =>
-              parseGE(major, minor, patch, Prerelease.parse(prerelease))
-            case Some("~") =>
-              parseTilde(major, minor, patch, Prerelease.parse(prerelease))
-            case _ =>
-              parseEQ(major, minor, patch, Prerelease.parse(prerelease))
-          }
-          Some(list)
+    def parse(string: String): Option[List[Constraint]] = {
+      var tokens = tokenSepR
+        .split(opR.replaceAllIn(string, m => s"${m.group(1)} ").trim())
+        .toList
+        .filterNot(_.isBlank())
+
+      // 1. Case of `1.2.3 - 4.5.6`:
+      if (tokens.size == 3 && tokens(1) == "-") {
+        return tokens match {
+          case List(
+                partialR(major1, minor1, patch1, pre1, _),
+                "-",
+                partialR(major2, minor2, patch2, pre2, _)
+              ) =>
+            val constraints1 = parseGE(major1, minor1, patch1, Prerelease.parse(pre1))
+            val constraints2 = parseLE(major2, minor2, patch2, Prerelease.parse(pre2))
+            Some(constraints1 ++ constraints2)
+          case _ => None
         }
-        case hyphenR(major1, minor1, patch1, prerelease1, _, major2, minor2, patch2, prerelease2, _) => {
-          val v1 = parseGE(major1, minor1, patch1, Prerelease.parse(prerelease1))
-          val v2 = parseLE(major2, minor2, patch2, Prerelease.parse(prerelease2))
-          Some(v1 ++ v2)
-        }
-        case _ => None
       }
 
-    private[this] def partial(digits: String): String =
-      // major.minor.patch (minor and patch are optional)
-      raw"""($digits)(?:\.($digits)(?:\.($digits)""" +
-        // -prerelease (optional)
-        """(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?""" +
-        // +build (optional)
-        """(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)?)?"""
+      // 2. Case of `>1.2.3 4.5.6`:
+      val constraints = List.newBuilder[Constraint]
 
-    private[this] val simpleR = raw"^([<>]=?|=|[~^])?${partial(raw"[0xX*]|[1-9]\d*")}$$".r
-    private[this] val hyphenR = raw"^${partial(raw"0|[1-9]\d*")}-${partial(raw"0|[1-9]\d*")}$$".r
+      while (tokens.nonEmpty) {
+        tokens match {
+          case partialR(major, minor, patch, pre, _) :: xs =>
+            constraints.addAll(parseEQ(major, minor, patch, Prerelease.parse(pre)))
+            tokens = xs
+          case "=" :: partialR(major, minor, patch, pre, _) :: xs =>
+            constraints.addAll(parseEQ(major, minor, patch, Prerelease.parse(pre)))
+            tokens = xs
+          case "<" :: partialR(major, minor, patch, pre, _) :: xs =>
+            constraints.addAll(parseLT(major, minor, patch, Prerelease.parse(pre)))
+            tokens = xs
+          case "<=" :: partialR(major, minor, patch, pre, _) :: xs =>
+            constraints.addAll(parseLE(major, minor, patch, Prerelease.parse(pre)))
+            tokens = xs
+          case ">" :: partialR(major, minor, patch, pre, _) :: xs =>
+            constraints.addAll(parseGT(major, minor, patch, Prerelease.parse(pre)))
+            tokens = xs
+          case ">=" :: partialR(major, minor, patch, pre, _) :: xs =>
+            constraints.addAll(parseGE(major, minor, patch, Prerelease.parse(pre)))
+            tokens = xs
+          case "~" :: partialR(major, minor, patch, pre, _) :: xs =>
+            constraints.addAll(parseTilde(major, minor, patch, Prerelease.parse(pre)))
+            tokens = xs
+          case "^" :: partialR(major, minor, patch, pre, _) :: xs =>
+            constraints.addAll(parseCaret(major, minor, patch, Prerelease.parse(pre)))
+            tokens = xs
+          case _ => return None
+        }
+      }
+
+      Some(constraints.result())
+    }
+
+    private[this] val opR = raw"([<>]=?|=|\^|~)\s*".r
+    private[this] val tokenSepR = raw"\s+".r
+
+    private[this] val partialR =
+      (
+        // major.minor.patch (minor and patch are optional)
+        """([0xX*]|[1-9]\d*)(?:\.([0xX*]|[1-9]\d*)(?:\.([0xX*]|[1-9]\d*)""" +
+          // -prerelease (optional)
+          """(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?""" +
+          // +build (optional)
+          """(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)?)?"""
+      ).r
 
     private[this] def parseInt(s: String): Option[Int] = Option(s).flatMap(_.toIntOption)
 
-    private[this] def parseEQ(major: String, minor: String, patch: String, prerelease: Prerelease): List[Constraint] =
+    private[this] def parseEQ(major: String, minor: String, patch: String, pre: Prerelease): List[Constraint] =
       (parseInt(major), parseInt(minor), parseInt(patch)) match {
         case (None, _, _) => List.empty
         case (Some(major), None, _) =>
@@ -165,10 +191,10 @@ object VersionSet {
             Constraint(Op.LT, Version(major, minor + 1, 0, Prerelease.zero))
           )
         case (Some(major), Some(minor), Some(patch)) =>
-          List(Constraint(Op.EQ, Version(major, minor, patch, prerelease)))
+          List(Constraint(Op.EQ, Version(major, minor, patch, pre)))
       }
 
-    private[this] def parseLT(major: String, minor: String, patch: String, prerelease: Prerelease): List[Constraint] =
+    private[this] def parseLT(major: String, minor: String, patch: String, pre: Prerelease): List[Constraint] =
       (parseInt(major), parseInt(minor), parseInt(patch)) match {
         case (None, _, _) => List(Constraint(Op.LT, Version(0, 0, 0, Prerelease.zero)))
         case (Some(major), None, _) =>
@@ -176,10 +202,10 @@ object VersionSet {
         case (Some(major), Some(minor), None) =>
           List(Constraint(Op.LT, Version(major, minor, 0, Prerelease.zero)))
         case (Some(major), Some(minor), Some(patch)) =>
-          List(Constraint(Op.LT, Version(major, minor, patch, prerelease)))
+          List(Constraint(Op.LT, Version(major, minor, patch, pre)))
       }
 
-    private[this] def parseLE(major: String, minor: String, patch: String, prerelease: Prerelease): List[Constraint] =
+    private[this] def parseLE(major: String, minor: String, patch: String, pre: Prerelease): List[Constraint] =
       (parseInt(major), parseInt(minor), parseInt(patch)) match {
         case (None, _, _) => List.empty
         case (Some(major), None, _) =>
@@ -187,37 +213,32 @@ object VersionSet {
         case (Some(major), Some(minor), None) =>
           List(Constraint(Op.LT, Version(major, minor + 1, 0, Prerelease.zero)))
         case (Some(major), Some(minor), Some(patch)) =>
-          List(Constraint(Op.LE, Version(major, minor, patch, prerelease)))
+          List(Constraint(Op.LE, Version(major, minor, patch, pre)))
       }
 
-    private[this] def parseGT(major: String, minor: String, patch: String, prerelease: Prerelease): List[Constraint] =
+    private[this] def parseGT(major: String, minor: String, patch: String, pre: Prerelease): List[Constraint] =
       (parseInt(major), parseInt(minor), parseInt(patch)) match {
         case (None, _, _) => List(Constraint(Op.LT, Version(0, 0, 0, Prerelease.zero)))
         case (Some(major), None, _) =>
-          List(Constraint(Op.GE, Version(major + 1, 0, 0, Prerelease.zero)))
+          List(Constraint(Op.GE, Version(major + 1, 0, 0)))
         case (Some(major), Some(minor), None) =>
-          List(Constraint(Op.GE, Version(major, minor + 1, 0, Prerelease.zero)))
+          List(Constraint(Op.GE, Version(major, minor + 1, 0)))
         case (Some(major), Some(minor), Some(patch)) =>
-          List(Constraint(Op.GT, Version(major, minor, patch, prerelease)))
+          List(Constraint(Op.GT, Version(major, minor, patch, pre)))
       }
 
-    private[this] def parseGE(major: String, minor: String, patch: String, prerelease: Prerelease): List[Constraint] =
+    private[this] def parseGE(major: String, minor: String, patch: String, pre: Prerelease): List[Constraint] =
       (parseInt(major), parseInt(minor), parseInt(patch)) match {
         case (None, _, _) => List.empty
         case (Some(major), None, _) =>
-          List(Constraint(Op.GE, Version(major, 0, 0, Prerelease.zero)))
+          List(Constraint(Op.GE, Version(major, 0, 0)))
         case (Some(major), Some(minor), None) =>
-          List(Constraint(Op.GE, Version(major, minor, 0, Prerelease.zero)))
+          List(Constraint(Op.GE, Version(major, minor, 0)))
         case (Some(major), Some(minor), Some(patch)) =>
-          List(Constraint(Op.GE, Version(major, minor, patch, prerelease)))
+          List(Constraint(Op.GE, Version(major, minor, patch, pre)))
       }
 
-    private[this] def parseTilde(
-        major: String,
-        minor: String,
-        patch: String,
-        prerelease: Prerelease
-    ): List[Constraint] =
+    private[this] def parseTilde(major: String, minor: String, patch: String, pre: Prerelease): List[Constraint] =
       (parseInt(major), parseInt(minor), parseInt(patch)) match {
         case (None, _, _) => List.empty
         case (Some(major), None, _) =>
@@ -229,17 +250,12 @@ object VersionSet {
           )
         case (Some(major), Some(minor), Some(patch)) =>
           List(
-            Constraint(Op.GE, Version(major, minor, patch, prerelease)),
+            Constraint(Op.GE, Version(major, minor, patch, pre)),
             Constraint(Op.LT, Version(major, minor + 1, 0, Prerelease.zero))
           )
       }
 
-    private[this] def parseCaret(
-        major: String,
-        minor: String,
-        patch: String,
-        prerelease: Prerelease
-    ): List[Constraint] =
+    private[this] def parseCaret(major: String, minor: String, patch: String, pre: Prerelease): List[Constraint] =
       (parseInt(major), parseInt(minor), parseInt(patch)) match {
         case (None, _, _) => List.empty
         case (Some(major), None, _) =>
@@ -248,17 +264,17 @@ object VersionSet {
           List(Constraint(Op.GE, Version(0, minor, 0)), Constraint(Op.LT, Version(0, minor + 1, 0, Prerelease.zero)))
         case (Some(0), Some(minor), Some(patch)) =>
           List(
-            Constraint(Op.GE, Version(0, minor, patch)),
+            Constraint(Op.GE, Version(0, minor, patch, pre)),
             Constraint(Op.LT, Version(0, minor + 1, 0, Prerelease.zero))
           )
         case (Some(major), Some(minor), None) =>
           List(
             Constraint(Op.GE, Version(major, minor, 0)),
-            Constraint(Op.LT, Version(major + 1, minor, 0, Prerelease.zero))
+            Constraint(Op.LT, Version(major + 1, 0, 0, Prerelease.zero))
           )
         case (Some(major), Some(minor), Some(patch)) =>
           List(
-            Constraint(Op.GE, Version(major, minor, patch, prerelease)),
+            Constraint(Op.GE, Version(major, minor, patch, pre)),
             Constraint(Op.LT, Version(major + 1, 0, 0, Prerelease.zero))
           )
       }
