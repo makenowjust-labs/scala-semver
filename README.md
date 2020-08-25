@@ -1,6 +1,6 @@
-# scala-labo-semver
+# scala-semver
 
-> simple semantic versioning parser/comparator implementation.
+> A simple [semver](https://semver.org/) parser/comparator implementation.
 
 ## Example
 

@@ -26,6 +26,6 @@ project/plugins/project/
  # Reference: https://scalameta.org/metals/
 .metals/
 .bloop/
-project/metals.sbt
+metals.sbt
 
 

@@ -9,8 +9,6 @@ lazy val root = project
     organization := "codes.quine.labo",
     version := "0.1.0-SNAPSHOT",
     console / initialCommands := """
-      |import scala.util.chaining._
-      |
       |import codes.quine.labo.semver._
       """.stripMargin,
     // Set URL mapping of scala standard API for Scaladoc.
