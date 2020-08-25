@@ -6,19 +6,19 @@ import Version._
 import VersionSet._
 
 object VersionSetSuite extends SimpleTestSuite {
-  val Version011p0 = Version(0, 1, 1, Prerelease(List(Right("p0"))))
-  val Version111p0 = Version(1, 1, 1, Prerelease(List(Right("p0"))))
+  val Version011p0: Version = Version(0, 1, 1, Prerelease(List(Right("p0"))))
+  val Version111p0: Version = Version(1, 1, 1, Prerelease(List(Right("p0"))))
 
-  val AnyVersionSet = VersionSet(List(List.empty))
-  val EmptyVersionSet = VersionSet(List(List(Constraint(Op.LT, Version(0, 0, 0, Prerelease.zero)))))
-  val Version1Set = VersionSet(
+  val AnyVersionSet: VersionSet = VersionSet(List(List.empty))
+  val EmptyVersionSet: VersionSet = VersionSet(List(List(Constraint(Op.LT, Version(0, 0, 0, Prerelease.zero)))))
+  val Version1Set: VersionSet = VersionSet(
     List(List(Constraint(Op.GE, Version(1, 0, 0)), Constraint(Op.LT, Version(2, 0, 0, Prerelease.zero))))
   )
-  val Version11Set = VersionSet(
+  val Version11Set: VersionSet = VersionSet(
     List(List(Constraint(Op.GE, Version(1, 1, 0)), Constraint(Op.LT, Version(1, 2, 0, Prerelease.zero))))
   )
-  val Version111Set = VersionSet(List(List(Constraint(Op.EQ, Version(1, 1, 1)))))
-  val Version1And2Set = VersionSet(
+  val Version111Set: VersionSet = VersionSet(List(List(Constraint(Op.EQ, Version(1, 1, 1)))))
+  val Version1And2Set: VersionSet = VersionSet(
     List(
       List(
         Constraint(Op.GE, Version(1, 0, 0)),

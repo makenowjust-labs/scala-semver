@@ -1,7 +1,4 @@
 package codes.quine.labo.semver
-
-import scala.util.matching.Regex
-
 import Version._
 
 /**
