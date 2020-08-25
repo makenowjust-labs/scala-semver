@@ -24,7 +24,7 @@ lazy val root = project
   .settings(
     name := "semver",
     organization := "codes.quine.labo",
-    version := "0.1.0",
+    version := "0.1.1-SNAPSHOT",
     console / initialCommands := """
       |import codes.quine.labo.semver._
       """.stripMargin,
