@@ -9,7 +9,8 @@ ThisBuild / scalacOptions ++= Seq(
   "UTF-8",
   "-feature",
   "-deprecation",
-  "-Wunused"
+  "-Wunused",
+  "-language:implicitConversions"
 )
 
 // Scalafix config:
@@ -28,6 +29,7 @@ lazy val root = project
     console / initialCommands := """
       |import codes.quine.labo.semver._
       """.stripMargin,
+    Compile / console / scalacOptions -= "-Wunused",
     // Set URL mapping of scala standard API for Scaladoc.
     apiMappings ++= scalaInstance.value.libraryJars
       .filter(file => file.getName.startsWith("scala-library") && file.getName.endsWith(".jar"))
@@ -35,5 +37,13 @@ lazy val root = project
       .toMap,
     // Settings for test:
     libraryDependencies += "io.monix" %% "minitest" % "2.8.2" % Test,
-    testFrameworks += new TestFramework("minitest.runner.Framework")
+    testFrameworks += new TestFramework("minitest.runner.Framework"),
+    doctestTestFramework := DoctestTestFramework.Minitest,
+    doctestMarkdownEnabled := true,
+    // Surpress warnings in doctest generated files.
+    libraryDependencies ++= Seq(
+      compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.1" cross CrossVersion.full),
+      "com.github.ghik" % "silencer-lib" % "1.7.1" % Provided cross CrossVersion.full
+    ),
+    scalacOptions += "-P:silencer:globalFilters=toVoid is never used"
   )
