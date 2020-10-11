@@ -3,8 +3,7 @@ package codes.quine.labo.semver
 import Version._
 import VersionSet._
 
-/**
-  * This represents set of Semantic versioning versions.
+/** This represents set of Semantic versioning versions.
   *
   * It holds constraints, and its elements satisfy them.
   *
@@ -33,8 +32,7 @@ object VersionSet {
     final case object EQ extends Op
   }
 
-  /**
-    * This represents version contraint like =1.2.3 or >=1.2.3.
+  /** This represents version contraint like =1.2.3 or >=1.2.3.
     */
   final case class Constraint(op: Op, value: Version) {
 
@@ -58,8 +56,7 @@ object VersionSet {
       }
   }
 
-  /**
-    * Parse a string as version set.
+  /** Parse a string as version set.
     *
     * @param string a version set string.
     * @return a result of parsing.
@@ -70,8 +67,7 @@ object VersionSet {
   def parse(string: String): Option[VersionSet] =
     traverse(unionSepR.pattern.split(string, -1).toList)(Constraint.parse(_)).map(VersionSet(_))
 
-  /**
-    * Traverse a list with [[scala.Option]] effect.
+  /** Traverse a list with [[scala.Option]] effect.
     *
     * This is specialized version of [[https://typelevel.org/cats/typeclasses/traverse.html cats.Traverse]] method.
     *
@@ -100,8 +96,7 @@ object VersionSet {
 
   object Constraint {
 
-    /**
-      * Parse a string as version constraints.
+    /** Parse a string as version constraints.
       *
       * @param string a version constraint string
       * @return [[scala.Some Some]] when parsing is succeeded, or [[scala.None None]] for failure.

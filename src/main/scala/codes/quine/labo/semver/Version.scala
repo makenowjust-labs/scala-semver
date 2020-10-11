@@ -1,8 +1,7 @@
 package codes.quine.labo.semver
 import Version._
 
-/**
-  * This represents semantic versioning version.
+/** This represents semantic versioning version.
   *
   * @param major major.X.X part number
   * @param minor X.minor.X part number
@@ -41,8 +40,7 @@ object Version {
         """(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?"""
     ).r
 
-  /**
-    * Parse a string as semantic versioning version.
+  /** Parse a string as semantic versioning version.
     *
     * @param string a semantic versioning version string
     * @return a result of parsing.
@@ -84,8 +82,7 @@ object Version {
   implicit val OrderingInstanceForVersion: Ordering[Version] =
     Ordering.by((_: Version).major).orElseBy(_.minor).orElseBy(_.patch).orElseBy(_.prerelease)
 
-  /**
-    * This represents a prereleas part of semantic versioning version.
+  /** This represents a prereleas part of semantic versioning version.
     *
     * @param parts parts of prerelease.
     *   It can contain either [[scala.Int Int]] or [[java.lang.String String]].
@@ -105,8 +102,7 @@ object Version {
     /** A Prerelease object contains a zero. Note that it is the least object of any Prerelease. */
     def zero: Prerelease = Prerelease(List(Left(0)))
 
-    /**
-      * Parse X.X.X-prerelease part of semantic versioning version.
+    /** Parse X.X.X-prerelease part of semantic versioning version.
       *
       * @param string a prerelease part string (null is possible for some reasons)
       * @return a result of parsing. It is succeeded always, so it may produces invalid Prerelease in some cases.
