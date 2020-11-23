@@ -18,7 +18,7 @@ ThisBuild / scalafixScalaBinaryVersion := "2.13"
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.4.4"
-ThisBuild / scalafixDependencies += "com.github.vovapolu" %% "scaluzzi" % "0.1.15"
+ThisBuild / scalafixDependencies += "com.github.vovapolu" %% "scaluzzi" % "0.1.16"
 
 lazy val root = project
   .in(file("."))
@@ -36,7 +36,7 @@ lazy val root = project
       .map(_ -> url(s"http://www.scala-lang.org/api/${scalaVersion.value}/"))
       .toMap,
     // Settings for test:
-    libraryDependencies += "io.monix" %% "minitest" % "2.8.2" % Test,
+    libraryDependencies += "io.monix" %% "minitest" % "2.9.0" % Test,
     testFrameworks += new TestFramework("minitest.runner.Framework"),
     doctestTestFramework := DoctestTestFramework.Minitest,
     doctestMarkdownEnabled := true,
